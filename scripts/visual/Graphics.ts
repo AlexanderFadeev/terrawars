@@ -1,7 +1,8 @@
 import { World } from "../core/World.js";
-import { Point } from "../geometry/Point.js";
+import { Vec2D } from "../geometry/Vec2D.js";
 import { Rect } from "../geometry/Rect.js"
 import { hsv2rgb } from "../util.js";
+import { Ball } from "../core/Ball.js";
 
 export class Graphics {
     constructor(canvas: HTMLCanvasElement) {
@@ -20,11 +21,21 @@ export class Graphics {
         this.canvasCtx.fill();
     }
 
+    drawCircle(pos: Vec2D, radius: number, borderColor: string, fillColor: string) {
+        this.canvasCtx.beginPath();
+        this.canvasCtx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI, false);
+        this.canvasCtx.fillStyle = fillColor;
+        this.canvasCtx.fill();
+        this.canvasCtx.lineWidth = 1;
+        this.canvasCtx.strokeStyle = borderColor;
+        this.canvasCtx.stroke();
+    }
+
     drawTile(row: number, col: number, color: string) {
-        const scale: number = 10;
+        const scale = this.scale;
         let rect = new Rect(
-            new Point(col * scale, row * scale),
-            new Point((col + 1) * scale, (row + 1) * scale)
+            new Vec2D(col * scale, row * scale),
+            new Vec2D((col + 1) * scale, (row + 1) * scale)
         );
         this.drawRect(rect, color);
     }
@@ -48,10 +59,41 @@ export class Graphics {
         }
     }
 
-    drawWorld(world: World) {
-        this.drawTiles(world)
+    drawBall(ball: Ball, borderColor: string, fillColor: string) {
+        const scale = this.scale;
+        this.drawCircle(
+            new Vec2D(ball.pos.x * scale, ball.pos.y * scale),
+            ball.radius * scale,
+            borderColor,
+            fillColor,
+        );
     }
 
+    drawBalls(world: World) {
+        const balls = world.balls;
+        const nFactions = world.nFactions;
+
+        let borderColors = new Array<string>();
+        for (let factionId = 1; factionId <= nFactions; factionId++) {
+            borderColors[factionId - 1] = hsv2rgb(360 * (factionId - 1) / nFactions, 1, 1);
+        }
+
+        let fillColors = new Array<string>();
+        for (let factionId = 1; factionId <= nFactions; factionId++) {
+            fillColors[factionId - 1] = hsv2rgb(360 * (factionId - 1) / nFactions, 1, 0.75);
+        }
+
+        for (let ball of balls) {
+            this.drawBall(ball, borderColors[ball.faction.id - 1], fillColors[ball.faction.id - 1]);
+        }
+    }
+
+    drawWorld(world: World) {
+        this.drawTiles(world);
+        this.drawBalls(world);
+    }
+
+    readonly scale: number = 10;
     private canvas: HTMLCanvasElement;
     private canvasCtx: CanvasRenderingContext2D;
 }

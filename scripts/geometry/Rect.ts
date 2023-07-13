@@ -1,13 +1,13 @@
-import { Point } from "./Point.js";
+import { Vec2D } from "./Vec2D.js";
 
 export class Rect {
-    constructor(upLeft: Point, downRight: Point) {
+    constructor(upLeft: Vec2D, downRight: Vec2D) {
         this.upLeft = upLeft;
         this.downRight = downRight;
     }
 
-    upLeft: Point;
-    downRight: Point;
+    upLeft: Vec2D;
+    downRight: Vec2D;
 
     up(): number {
         return this.upLeft.y;

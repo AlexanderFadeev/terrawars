@@ -13,10 +13,14 @@ export class Game {
     }
 
     tick() {
+        console.log(`${this.world.balls.length} balls`)
+
         let curTime = Date.now();
         let dt = curTime - this.prevTime;
         console.log(`Delta time = ${dt}`);
         this.prevTime = curTime;
+
+        this.world.update(dt);
 
         this.graphics.reset();
         this.graphics.drawWorld(this.world);

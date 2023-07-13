@@ -6,14 +6,14 @@ import { random } from "../../util.js";
 export class ArenaGen implements MapGenerator {
     generate(rows: number, cols: number, nFactions: number): Map {
         let map = new Map(rows, cols);
-        for (let row = 0; row < rows; row++) {
-            map.tiles[row][0].faction = Faction.Wall;
-            map.tiles[row][cols - 1].faction = Faction.Wall;
-        }
-        for (let col = 0; col < cols; col++) {
-            map.tiles[0][col].faction = Faction.Wall;
-            map.tiles[rows - 1][col].faction = Faction.Wall;
-        }
+        // for (let row = 0; row < rows; row++) {
+        //     map.tiles[row][0].faction = Faction.Wall;
+        //     map.tiles[row][cols - 1].faction = Faction.Wall;
+        // }
+        // for (let col = 0; col < cols; col++) {
+        //     map.tiles[0][col].faction = Faction.Wall;
+        //     map.tiles[rows - 1][col].faction = Faction.Wall;
+        // }
 
         for (let i = 1; i <= nFactions; i++) {
             this.placeFaction(map, i);
