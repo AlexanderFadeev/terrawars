@@ -13,7 +13,10 @@ export class World {
     }
 
     update(dt: number) {
-        const substeps = 1;
+        if (Math.random() > 0.9) {
+            this.spawn();
+        }
+        const substeps = 8;
         dt /= substeps;
         for (let iter = 0; iter < substeps; iter++) {
             this.subUpdate(dt);
@@ -28,7 +31,6 @@ export class World {
             ball.update(dt, bounds);
         }
 
-        this.spawn();
         this.checkCollisions();
         this.eraseDeadBalls();
     }
@@ -57,7 +59,7 @@ export class World {
 
                 this.balls.push(new Ball(
                     // 1,
-                    0.1,
+                    0.12,
                     new Vec2D(col + 0.5, row + 0.5),
                     Vec2D.Random(0.1 / 10),
                     tile.faction,
@@ -73,13 +75,18 @@ export class World {
 
     private checkBallCollisions() {
         let balls = this.balls;
+        balls.sort((a, b): number => (a.pos.x - a.radius < b.pos.x - b.radius) ? -1 : 1);
+
+        let collisionChecks = 0;
         const lim = balls.length
         for (let i = 0; i < lim; i++) {
             let bi = balls[i];
             if (bi.dead) {
                 continue;
             }
-            for (let j = i + 1; j < lim; j++) {
+            // for (let j = i + 1; j < lim; j++) {
+            for (let j = i + 1; j < lim && bi.pos.x + bi.radius > balls[j].pos.x - balls[j].radius; j++) {
+                collisionChecks++;
                 let bj = balls[j];
                 if (bj.dead) {
                     continue;
@@ -91,6 +98,8 @@ export class World {
                 this.collideBalls(bi, bj);
             }
         }
+
+        console.log(`Collision checks: ${collisionChecks}, balls count: ${balls.length}`);
     }
 
     private collideBalls(b1: Ball, b2: Ball) {
@@ -133,7 +142,7 @@ export class World {
         let balls = this.balls;
         let map = this.map;
 
-        const captureCost = 1; // tile size
+        const captureCost = 1 / Math.PI; // tile "mass"
 
         for (let i = 0; i < balls.length; i++) {
             let ball = balls[i];

@@ -16,7 +16,7 @@ function main() {
 
     let canvas = getCanvas();
     let game = new Game(canvas);
-    game.start(94, 167, 1);
+    game.start(94, 167, 8);
 }
 
 main();
