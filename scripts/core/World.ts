@@ -26,16 +26,16 @@ export class World {
         for (let i = 0; i < this.balls.length; i++) {
             let ball = balls[i];
             ball.update(dt, bounds);
-            //  if (ball.outOfBounds()) {
-            //     balls[i] = balls[balls.length - 1];
-            //     balls.pop();
-            //     i--;
-            // }
         }
 
         this.spawn();
         this.checkCollisions();
-        for (let i = 0; i < this.balls.length; i++) {
+        this.eraseDeadBalls();
+    }
+
+    private eraseDeadBalls() {
+        let balls = this.balls;
+        for (let i = 0; i < balls.length; i++) {
             let ball = balls[i];
             if (ball.dead) {
                 balls[i] = balls[balls.length - 1];
@@ -45,7 +45,7 @@ export class World {
         }
     }
 
-    spawn() {
+    private spawn() {
         let map = this.map;
 
         for (let row = 0; row < map.rows; row++) {
@@ -66,7 +66,12 @@ export class World {
         }
     }
 
-    checkCollisions() {
+    private checkCollisions() {
+        this.checkBallCollisions();
+        this.checkTileCollisions();
+    }
+
+    private checkBallCollisions() {
         let balls = this.balls;
         const lim = balls.length
         for (let i = 0; i < lim; i++) {
@@ -83,14 +88,14 @@ export class World {
                     continue;
                 }
 
-                this.collide(bi, bj);
+                this.collideBalls(bi, bj);
             }
         }
     }
 
-    collide(b1: Ball, b2: Ball) {
+    private collideBalls(b1: Ball, b2: Ball) {
         if (b1.mass < b2.mass) {
-            this.collide(b2, b1);
+            this.collideBalls(b2, b1);
             return;
         }
         b2.die();
@@ -121,6 +126,49 @@ export class World {
 
             b1.radius = r;
             b1.speed = v;
+        }
+    }
+
+    private checkTileCollisions() {
+        let balls = this.balls;
+        let map = this.map;
+
+        const captureCost = 1; // tile size
+
+        for (let i = 0; i < balls.length; i++) {
+            let ball = balls[i];
+            if (ball.mass < captureCost) {
+                continue;
+            }
+
+            const rowMin = Math.max(0, Math.floor(ball.pos.y - ball.radius));
+            const rowMax = Math.min(map.rows - 1, Math.ceil(ball.pos.y + ball.radius));
+            const colMin = Math.max(0, Math.floor(ball.pos.x - ball.radius));
+            const colMax = Math.min(map.cols - 1, Math.ceil(ball.pos.x + ball.radius));
+
+            for (let row = rowMin; row <= rowMax; row++) {
+                for (let col = colMin; col <= colMax; col++) {
+                    let tile = map.tiles[row][col];
+
+                    if (ball.faction.id == tile.faction.id) {
+                        continue;
+                    }
+
+                    tile.faction = ball.faction;
+                    ball.radius = Math.sqrt(ball.mass - captureCost);
+                    if (ball.mass < 1e-4) {
+                        ball.die();
+                        break;
+                    }
+
+                    if (ball.mass < captureCost) {
+                        break;
+                    }
+                }
+                if (ball.mass < captureCost) {
+                    break;
+                }
+            }
         }
     }
 
