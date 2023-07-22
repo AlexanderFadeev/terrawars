@@ -4,12 +4,16 @@ export class Vec2D {
         this.y = y;
     }
 
-    static Random(len: number) {
-        let angle = Math.random() * Math.PI * 2;
+    static FromPolar(len: number, angle: number) {
         return new Vec2D(
             len * Math.sin(angle),
             len * Math.cos(angle)
-        )
+        );
+    }
+
+    static Random(len: number) {
+        let angle = Math.random() * Math.PI * 2;
+        return this.FromPolar(len, angle);
     }
 
     length(): number {

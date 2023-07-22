@@ -17,7 +17,7 @@ export class Graphics {
     drawRect(rect: Rect, color: string) {
         this.canvasCtx.beginPath();
         this.canvasCtx.fillStyle = color;
-        this.canvasCtx.rect(rect.left(), rect.up(), rect.width(), rect.height());
+        this.canvasCtx.rect(rect.left, rect.up, rect.width, rect.height);
         this.canvasCtx.fill();
     }
 
@@ -54,6 +54,10 @@ export class Graphics {
         for (let row = 0; row < tiles.length; row++) {
             for (let col = 0; col < tiles[row].length; col++) {
                 const faction = tiles[row][col].faction;
+                if (faction.isNeutral()) {
+                    continue;
+                }
+
                 this.drawTile(row, col, colors[faction.id + 1]);
             }
         }
@@ -62,7 +66,7 @@ export class Graphics {
     drawBall(ball: Ball, borderColor: string, fillColor: string) {
         const scale = this.scale;
         this.drawCircle(
-            new Vec2D(ball.pos.x * scale, ball.pos.y * scale),
+            new Vec2D(ball.origin.x * scale, ball.origin.y * scale),
             ball.radius * scale,
             borderColor,
             fillColor,

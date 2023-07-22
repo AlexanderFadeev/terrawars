@@ -24,4 +24,8 @@ export class Faction {
     static get Neutral(): Faction {
         return new Faction(0);
     }
+
+    equal(f: Faction): boolean {
+        return this.id == f.id;
+    }
 }

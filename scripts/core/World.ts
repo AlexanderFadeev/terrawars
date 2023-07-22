@@ -3,6 +3,8 @@ import { ArenaGen } from "./map_gen/ArenaGen.js"
 import { MapGenerator } from "./map_gen/MapGenerator.js"
 import { Ball } from "./Ball.js"
 import { Vec2D } from "../geometry/Vec2D.js";
+import { Collision } from "../geometry/Collision.js";
+import { Rect } from "../geometry/Rect.js";
 
 export class World {
     constructor(rows: number, cols: number, nFactions: number) {
@@ -12,22 +14,24 @@ export class World {
         this.nFactions = nFactions;
     }
 
-    update(dt: number) {
-        if (Math.random() > 0.9) {
-            this.spawn();
-        }
-        const substeps = 8;
+    update(t: number, dt: number) {
+        this.spawn(t);
+        const substeps = 1 << 1 - 1;
         dt /= substeps;
         for (let iter = 0; iter < substeps; iter++) {
-            this.subUpdate(dt);
+            this.subUpdate(t + iter * dt, dt);
         }
     }
 
-    subUpdate(dt: number) {
+    subUpdate(t: number, dt: number) {
         let balls = this.balls;
         const bounds = new Vec2D(this.map.cols, this.map.rows);
         for (let i = 0; i < this.balls.length; i++) {
             let ball = balls[i];
+            if (ball.area > 1) {
+                ball.area *= 0.997;
+                ball.speed = ball.speed.div(0.99);
+            }
             ball.update(dt, bounds);
         }
 
@@ -39,7 +43,7 @@ export class World {
         let balls = this.balls;
         for (let i = 0; i < balls.length; i++) {
             let ball = balls[i];
-            if (ball.dead) {
+            if (ball.isDead) {
                 balls[i] = balls[balls.length - 1];
                 balls.pop();
                 i--;
@@ -47,21 +51,24 @@ export class World {
         }
     }
 
-    private spawn() {
+    private spawn(t: number) {
         let map = this.map;
 
         for (let row = 0; row < map.rows; row++) {
             for (let col = 0; col < map.cols; col++) {
+                if (Math.random() < 0.9) {
+                    // continue;
+                }
+
                 let tile = map.tiles[row][col];
                 if (!tile.faction.isPlayer()) {
                     continue;
                 }
 
                 this.balls.push(new Ball(
-                    // 1,
-                    0.12,
+                    0.1 / 2,
                     new Vec2D(col + 0.5, row + 0.5),
-                    Vec2D.Random(0.1 / 10),
+                    Vec2D.FromPolar(0.1 / 10, t / 500 * 2 * Math.PI + 555 * row + 333 * col),
                     tile.faction,
                 ));
             }
@@ -70,28 +77,27 @@ export class World {
 
     private checkCollisions() {
         this.checkBallCollisions();
-        this.checkTileCollisions();
+        this.checkBallsTilesCollisions();
     }
 
     private checkBallCollisions() {
         let balls = this.balls;
-        balls.sort((a, b): number => (a.pos.x - a.radius < b.pos.x - b.radius) ? -1 : 1);
+        balls.sort((a, b): number => (a.origin.x - a.radius < b.origin.x - b.radius) ? -1 : 1);
 
         let collisionChecks = 0;
         const lim = balls.length
         for (let i = 0; i < lim; i++) {
             let bi = balls[i];
-            if (bi.dead) {
+            if (bi.isDead) {
                 continue;
             }
-            // for (let j = i + 1; j < lim; j++) {
-            for (let j = i + 1; j < lim && bi.pos.x + bi.radius > balls[j].pos.x - balls[j].radius; j++) {
+            for (let j = i + 1; j < lim && bi.origin.x + bi.radius > balls[j].origin.x - balls[j].radius; j++) {
                 collisionChecks++;
                 let bj = balls[j];
-                if (bj.dead) {
+                if (bj.isDead) {
                     continue;
                 }
-                if (bi.radius + bj.radius <= bi.pos.dist(bj.pos)) {
+                if (!Collision.checkCircleCircle(bi, bj)) {
                     continue;
                 }
 
@@ -103,7 +109,7 @@ export class World {
     }
 
     private collideBalls(b1: Ball, b2: Ball) {
-        if (b1.mass < b2.mass) {
+        if (b1.area < b2.area) {
             this.collideBalls(b2, b1);
             return;
         }
@@ -112,70 +118,78 @@ export class World {
         let p1 = b1.momentum;
         let p2 = b2.momentum;
         let p = p1.add(p2);
-        let c1 = b1.pos.mul(b1.mass);
-        let c2 = b2.pos.mul(b2.mass);
 
-        if (b1.faction.id == b2.faction.id) {
-            let m = b1.mass + b2.mass;
-            let v = p.div(m);
-            let r = Math.sqrt(m);
+        if (b1.faction.equal(b2.faction)) {
+            let m = b1.area + b2.area;
+
+            let c1 = b1.origin.mul(b1.area);
+            let c2 = b2.origin.mul(b2.area);
             let c = c1.add(c2).div(m);
 
-            b1.radius = r;
-            b1.speed = v;
-            b1.pos = c;
+            b1.area = m;
+            b1.momentum = p;
+            b1.origin = c;
         } else {
-            let m = b1.mass - b2.mass;
-            if (m < 1e-4) {
+            b1.area -= b2.area;
+            if (b1.isNegligible) {
                 b1.die();
                 return;
             }
-            let r = Math.sqrt(m);
-            let v = p.div(m);
 
-            b1.radius = r;
-            b1.speed = v;
+            b1.momentum = p;
         }
     }
 
-    private checkTileCollisions() {
+    private checkBallsTilesCollisions() {
         let balls = this.balls;
         let map = this.map;
 
-        const captureCost = 1 / Math.PI; // tile "mass"
+        const captureCost = 1; // tile area
 
         for (let i = 0; i < balls.length; i++) {
-            let ball = balls[i];
-            if (ball.mass < captureCost) {
-                continue;
-            }
+            this.checkBallTilesCollision(balls[i], map, captureCost);
+        }
+    }
 
-            const rowMin = Math.max(0, Math.floor(ball.pos.y - ball.radius));
-            const rowMax = Math.min(map.rows - 1, Math.ceil(ball.pos.y + ball.radius));
-            const colMin = Math.max(0, Math.floor(ball.pos.x - ball.radius));
-            const colMax = Math.min(map.cols - 1, Math.ceil(ball.pos.x + ball.radius));
+    private checkBallTilesCollision(ball: Ball, map: Map, captureCost: number) {
+        if (ball.area < captureCost) {
+            return;
+        }
 
-            for (let row = rowMin; row <= rowMax; row++) {
-                for (let col = colMin; col <= colMax; col++) {
-                    let tile = map.tiles[row][col];
+        const rowMin = Math.max(0, Math.floor(ball.origin.y - ball.radius));
+        const rowMax = Math.min(map.rows - 1, Math.ceil(ball.origin.y + ball.radius));
+        const colMin = Math.max(0, Math.floor(ball.origin.x - ball.radius));
+        const colMax = Math.min(map.cols - 1, Math.ceil(ball.origin.x + ball.radius));
+        // TODO? calc col min/max inside loop
 
-                    if (ball.faction.id == tile.faction.id) {
-                        continue;
-                    }
-
-                    tile.faction = ball.faction;
-                    ball.radius = Math.sqrt(ball.mass - captureCost);
-                    if (ball.mass < 1e-4) {
-                        ball.die();
-                        break;
-                    }
-
-                    if (ball.mass < captureCost) {
-                        break;
-                    }
+        for (let row = rowMin; row <= rowMax; row++) {
+            for (let col = colMin; col <= colMax; col++) {
+                let tileRect = new Rect(
+                    new Vec2D(col, row),
+                    new Vec2D(col + 1, row + 1)
+                );
+                if (!Collision.checkRectCircle(tileRect, ball)) {
+                    continue;
                 }
-                if (ball.mass < captureCost) {
+
+                let tile = map.tiles[row][col];
+                if (tile.faction.isWall()) {
+                    continue;
+                }
+
+                if (ball.faction.equal(tile.faction)) {
+                    continue;
+                }
+
+                tile.faction = ball.faction;
+                ball.area -= captureCost;
+                if (ball.isNegligible) {
+                    ball.die();
                     break;
+                }
+
+                if (ball.area < captureCost) {
+                    return;
                 }
             }
         }

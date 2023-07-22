@@ -9,27 +9,35 @@ export class Rect {
     upLeft: Vec2D;
     downRight: Vec2D;
 
-    up(): number {
+    get upRight(): Vec2D {
+        return new Vec2D(this.right, this.up);
+    }
+
+    get downLeft(): Vec2D {
+        return new Vec2D(this.left, this.down);
+    }
+
+    get up(): number {
         return this.upLeft.y;
     }
 
-    down(): number {
+    get down(): number {
         return this.downRight.y;
     }
 
-    left(): number {
+    get left(): number {
         return this.upLeft.x;
     }
 
-    right(): number {
+    get right(): number {
         return this.downRight.x;
     }
 
-    width(): number {
-        return this.right() - this.left();
+    get width(): number {
+        return this.right - this.left;
     }
 
-    height(): number {
-        return this.down() - this.up();
+    get height(): number {
+        return this.down - this.up;
     }
 }

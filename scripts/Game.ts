@@ -20,7 +20,7 @@ export class Game {
         console.log(`Delta time = ${dt}`);
         this.prevTime = curTime;
 
-        this.world.update(dt);
+        this.world.update(curTime, dt);
 
         this.graphics.reset();
         this.graphics.drawWorld(this.world);
