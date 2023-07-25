@@ -1,7 +1,7 @@
 import { MapGenerator } from "./MapGenerator.js"
 import { Map } from "./../Map.js"
 import { Faction } from '../Faction.js';
-import { random } from "../../util.js";
+import { random } from "../../util/util.js";
 
 export class ArenaGen implements MapGenerator {
     generate(rows: number, cols: number, nFactions: number): Map {
@@ -14,9 +14,48 @@ export class ArenaGen implements MapGenerator {
             map.tiles[0][col].faction = Faction.Wall;
             map.tiles[rows - 1][col].faction = Faction.Wall;
         }
+        const spacing = 5;
+        // for (let row = 0; row < rows; row++) {
+        //     if (row % spacing) {
+        //         continue;
+        //     }
+        //     for (let col = 0; col < cols; col++) {
+        //         if (col % spacing) {
+        //             continue;
+        //         }
 
-        for (let i = 1; i <= nFactions; i++) {
-            this.placeFactionRandom(map, i);
+        //         this.placeFaction(map, row, col, Faction.Wall.id);
+        //     }
+        // }
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                if (Math.random() > 0.75) {
+                    this.placeFaction(map, row, col, Faction.Wall.id);
+                    continue;
+                }
+            }
+        }
+        // for (let row = 0; 7 / 3 * row < rows; row++) {
+        //     let col = Math.round(cols / 2);
+        //     this.placeFaction(map, row, col, Faction.Wall.id)
+        // }
+        // for (let col = 0; 7 / 3 * col < cols; col++) {
+        //     let row = Math.round(rows / 2);
+        //     this.placeFaction(map, row, col, Faction.Wall.id)
+        // }
+        // for (let row = Math.round(rows * 4 / 7); row < rows; row++) {
+        //     let col = Math.round(cols / 2);
+        //     this.placeFaction(map, row, col, Faction.Wall.id)
+        // }
+        // for (let col = Math.round(cols * 4 / 7); col < cols; col++) {
+        //     let row = Math.round(rows / 2);
+        //     this.placeFaction(map, row, col, Faction.Wall.id)
+        // }
+
+        for (let iter = 0; iter < 100; iter++) {
+            for (let i = 1; i <= nFactions; i++) {
+                this.placeFactionRandom(map, i);
+            }
         }
 
         // this.placeFaction(map, 0, 0, 1);

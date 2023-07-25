@@ -3,6 +3,7 @@ import { Ball } from "./Ball.js";
 import { Vec2D } from "../geometry/Vec2D.js";
 import { Collision } from "../geometry/Collision.js";
 import { Rect } from "../geometry/Rect.js";
+import { Faction } from "./Faction.js";
 export class World {
     constructor(rows, cols, nFactions) {
         let gen = new ArenaGen();
@@ -12,7 +13,7 @@ export class World {
     }
     update(t, dt) {
         this.spawn(t);
-        const substeps = 1 << 1 - 1;
+        const substeps = 1 << 4 - 1;
         dt /= substeps;
         for (let iter = 0; iter < substeps; iter++) {
             this.subUpdate(t + iter * dt, dt);
@@ -23,10 +24,7 @@ export class World {
         const bounds = new Vec2D(this.map.cols, this.map.rows);
         for (let i = 0; i < this.balls.length; i++) {
             let ball = balls[i];
-            if (ball.area > 1) {
-                ball.area *= 0.997;
-                ball.speed = ball.speed.div(0.99);
-            }
+            ball.speed = ball.speed.div(0.99);
             ball.update(dt, bounds);
         }
         this.checkCollisions();
@@ -47,13 +45,11 @@ export class World {
         let map = this.map;
         for (let row = 0; row < map.rows; row++) {
             for (let col = 0; col < map.cols; col++) {
-                if (Math.random() < 0.9) {
-                }
                 let tile = map.tiles[row][col];
                 if (!tile.faction.isPlayer()) {
                     continue;
                 }
-                this.balls.push(new Ball(0.1 / 2, new Vec2D(col + 0.5, row + 0.5), Vec2D.FromPolar(0.1 / 10, t / 500 * 2 * Math.PI + 555 * row + 333 * col), tile.faction));
+                this.balls.push(new Ball(0.1 / 2, new Vec2D(col + 0.5, row + 0.5), Vec2D.FromPolar(0.1 / 10, t / 500 * 2 * Math.PI + 555 * row + 777 * col), tile.faction));
             }
         }
     }
@@ -114,44 +110,78 @@ export class World {
     }
     checkBallsTilesCollisions() {
         let balls = this.balls;
-        let map = this.map;
-        const captureCost = 1;
         for (let i = 0; i < balls.length; i++) {
-            this.checkBallTilesCollision(balls[i], map, captureCost);
+            this.checkBallTilesCollision(balls[i]);
         }
     }
-    checkBallTilesCollision(ball, map, captureCost) {
-        if (ball.area < captureCost) {
-            return;
-        }
+    captureCost = 1;
+    checkBallTilesCollision(ball) {
+        let map = this.map;
         const rowMin = Math.max(0, Math.floor(ball.origin.y - ball.radius));
+        if (rowMin === undefined) {
+            debugger;
+        }
         const rowMax = Math.min(map.rows - 1, Math.ceil(ball.origin.y + ball.radius));
         const colMin = Math.max(0, Math.floor(ball.origin.x - ball.radius));
         const colMax = Math.min(map.cols - 1, Math.ceil(ball.origin.x + ball.radius));
         for (let row = rowMin; row <= rowMax; row++) {
+            if (rowMin === undefined) {
+                debugger;
+            }
             for (let col = colMin; col <= colMax; col++) {
-                let tileRect = new Rect(new Vec2D(col, row), new Vec2D(col + 1, row + 1));
+                if (rowMin === undefined) {
+                    debugger;
+                }
+                let tileRect = this.getTileRect(col, row);
                 if (!Collision.checkRectCircle(tileRect, ball)) {
                     continue;
                 }
+                if (rowMin === undefined) {
+                    debugger;
+                }
                 let tile = map.tiles[row][col];
-                if (tile.faction.isWall()) {
-                    continue;
-                }
-                if (ball.faction.equal(tile.faction)) {
-                    continue;
-                }
-                tile.faction = ball.faction;
-                ball.area -= captureCost;
-                if (ball.isNegligible) {
-                    ball.die();
-                    break;
-                }
-                if (ball.area < captureCost) {
-                    return;
+                switch (tile.faction.id) {
+                    case Faction.Wall.id:
+                        this.handleBallWallCollision(ball, tileRect);
+                        break;
+                    default:
+                        this.handleBallTileCollision(ball, row, col);
+                        if (ball.isDead) {
+                            return;
+                        }
                 }
             }
         }
+    }
+    handleBallWallCollision(ball, tileRect) {
+        let delta = tileRect.center.sub(ball.origin);
+        let n = delta.longestComponent;
+        let cos = ball.speed.cosTo(n);
+        if (cos < 0) {
+            return;
+        }
+        let s = ball.speed.project(n);
+        ball.speed = ball.speed.add(s.mul(-1.5));
+    }
+    handleBallTileCollision(ball, row, col) {
+        if (ball.area < this.captureCost) {
+            return;
+        }
+        let tile = this.map.tiles[row][col];
+        if (ball.faction.equal(tile.faction)) {
+            return;
+        }
+        if (tile.faction.isWall) {
+            console.assert(!tile.faction.isWall);
+        }
+        tile.faction = ball.faction;
+        ball.area -= this.captureCost;
+        if (ball.isNegligible) {
+            ball.die();
+        }
+    }
+    getTileRect(col, row) {
+        return new Rect(new Vec2D(col, row), new Vec2D(col + 1, row + 1));
     }
     map;
     balls;

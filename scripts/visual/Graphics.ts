@@ -1,7 +1,7 @@
 import { World } from "../core/World.js";
 import { Vec2D } from "../geometry/Vec2D.js";
 import { Rect } from "../geometry/Rect.js"
-import { hsv2rgb } from "../util.js";
+import { hsv2rgb } from "../util/util.js";
 import { Ball } from "../core/Ball.js";
 
 export class Graphics {

@@ -30,5 +30,8 @@ export class Rect {
     get height() {
         return this.down - this.up;
     }
+    get center() {
+        return this.upLeft.add(this.downRight).div(2);
+    }
 }
 //# sourceMappingURL=Rect.js.map

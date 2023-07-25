@@ -1,6 +1,6 @@
 import { Vec2D } from "../geometry/Vec2D.js";
 import { Rect } from "../geometry/Rect.js";
-import { hsv2rgb } from "../util.js";
+import { hsv2rgb } from "../util/util.js";
 export class Graphics {
     constructor(canvas) {
         this.canvas = canvas;

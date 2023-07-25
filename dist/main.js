@@ -12,7 +12,7 @@ function main() {
     onResize();
     let canvas = getCanvas();
     let game = new Game(canvas);
-    game.start(125, 223, 1);
+    game.start(93, 168, 4);
 }
 main();
 //# sourceMappingURL=main.js.map

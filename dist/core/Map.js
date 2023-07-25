@@ -1,4 +1,4 @@
-import { make2DArray } from "../util.js";
+import { make2DArray } from "../util/util.js";
 import { Tile } from "./Tile.js";
 export class Map {
     constructor(rows, cols) {

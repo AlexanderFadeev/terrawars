@@ -1,19 +1,12 @@
 export class Collision {
-    static checkCirclePoint(c, p) {
-        return c.origin.dist(p) < c.radius;
-    }
-    static checkPointCircle(p, c) {
-        return this.checkCirclePoint(c, p);
-    }
     static checkCircleCircle(a, b) {
         return a.origin.dist(b.origin) <= a.radius + b.radius;
     }
-    static checkRectPoint(r, p) {
-        return r.left < p.x && p.x < r.right
-            && r.up < p.y && p.y < r.down;
+    static checkCircleRect(c, r) {
+        return this.checkRectCircle(r, c);
     }
-    static checkPointRect(p, r) {
-        return this.checkRectPoint(r, p);
+    static checkCirclePoint(c, p) {
+        return c.origin.dist(p) < c.radius;
     }
     static checkRectCircle(r, c) {
         return this.checkCirclePoint(c, r.upLeft) ||
@@ -22,8 +15,21 @@ export class Collision {
             this.checkCirclePoint(c, r.downRight) ||
             this.checkRectPoint(r, c.origin);
     }
-    static checkCircleRect(c, r) {
-        return this.checkRectCircle(r, c);
+    static checkRectRect(a, b) {
+        throw new Error("unimplemented");
+    }
+    static checkRectPoint(r, p) {
+        return r.left < p.x && p.x < r.right
+            && r.up < p.y && p.y < r.down;
+    }
+    static checkPointCircle(p, c) {
+        return this.checkCirclePoint(c, p);
+    }
+    static checkPointRect(p, r) {
+        return this.checkRectPoint(r, p);
+    }
+    static checkPointPoint(a, b) {
+        throw new Error("unimplemented");
     }
 }
 //# sourceMappingURL=Collision.js.map

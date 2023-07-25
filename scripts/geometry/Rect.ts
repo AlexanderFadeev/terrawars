@@ -40,4 +40,8 @@ export class Rect {
     get height(): number {
         return this.down - this.up;
     }
+
+    get center(): Vec2D {
+        return this.upLeft.add(this.downRight).div(2);
+    }
 }
